@@ -7,11 +7,7 @@ import { transform } from "sucrase";
 
 const es6 = (...args: Parameters<typeof String["raw"]>) => transform(String.raw(...args), { transforms: ["typescript"] }).code;
 
-
-let lastGameStatus: GameStatus | null = null;
-
 export const getGameStatus = async (): Promise<GameStatus | null> => {
-	if (lastGameStatus) return lastGameStatus;
 	try {
 		const json = (await (await fetch("https://play.prodigygame.com/play")).text()).match(
 			/(?<=gameStatusDataStr = ').+(?=')/
@@ -23,10 +19,6 @@ export const getGameStatus = async (): Promise<GameStatus | null> => {
 		return null;
 	}
 };
-
-setInterval(() => {
-	lastGameStatus = null;
-}, 1800000);
 
 const gameFileCache: Record<string, string> = {};
 
@@ -41,10 +33,6 @@ export const getGameFile = async (version: string): Promise<string> => {
 		throw new Error(`Could not fetch game file with version ${version}.\nReason: ${e}`);
 	}
 };
-
-export const logtraffic = () => {
-	
-}
 
 export const patchGameFile = (str: string): string => {
 	const variables = [str.match("window,function\\(.\\)")![0].split("(")[1].replace(")", ""), str.match("var .={}")![0].split(" ")[1].replace("={}", "")] as string[];

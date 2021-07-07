@@ -3,16 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPatchedPublicGameFile = exports.getPatchedGameFile = exports.patchGameFile = exports.logtraffic = exports.getGameFile = exports.getGameStatus = void 0;
+exports.getPatchedPublicGameFile = exports.getPatchedGameFile = exports.patchGameFile = exports.getGameFile = exports.getGameStatus = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const constants_1 = require("./constants");
 const displayImages_1 = require("./displayImages");
 const sucrase_1 = require("sucrase");
 const es6 = (...args) => sucrase_1.transform(String.raw(...args), { transforms: ["typescript"] }).code;
-let lastGameStatus = null;
-const getGameStatus = async () => {
-    if (lastGameStatus)
-        return lastGameStatus;
+exports.getGameStatus = async () => {
     try {
         const json = (await (await node_fetch_1.default("https://play.prodigygame.com/play")).text()).match(/(?<=gameStatusDataStr = ').+(?=')/);
         if (!json?.length)
@@ -24,12 +21,8 @@ const getGameStatus = async () => {
         return null;
     }
 };
-exports.getGameStatus = getGameStatus;
-setInterval(() => {
-    lastGameStatus = null;
-}, 1800000);
 const gameFileCache = {};
-const getGameFile = async (version) => {
+exports.getGameFile = async (version) => {
     if (version in gameFileCache)
         return gameFileCache[version];
     if (!version.match(/^[0-9-]+$/))
@@ -41,11 +34,7 @@ const getGameFile = async (version) => {
         throw new Error(`Could not fetch game file with version ${version}.\nReason: ${e}`);
     }
 };
-exports.getGameFile = getGameFile;
-const logtraffic = () => {
-};
-exports.logtraffic = logtraffic;
-const patchGameFile = (str) => {
+exports.patchGameFile = (str) => {
     const variables = [str.match("window,function\\(.\\)")[0].split("(")[1].replace(")", ""), str.match("var .={}")[0].split(" ")[1].replace("={}", "")];
     const patches = Object.entries({
         [`s),this._game=${variables[1]}`]: `s),this._game=${variables[1]};
@@ -138,16 +127,14 @@ configurable: true,
 `}
 `;
 };
-exports.patchGameFile = patchGameFile;
 const patchedGameFileCache = {};
-const getPatchedGameFile = async (version) => {
+exports.getPatchedGameFile = async (version) => {
     if (version in patchedGameFileCache)
         return patchedGameFileCache[version];
     return (patchedGameFileCache[version] = exports.patchGameFile(await exports.getGameFile(version)));
 };
-exports.getPatchedGameFile = getPatchedGameFile;
 let patchedPublicGameFile = null;
-const getPatchedPublicGameFile = async (hash) => {
+exports.getPatchedPublicGameFile = async (hash) => {
     if (patchedPublicGameFile)
         return patchedPublicGameFile;
     if (!hash.match(/^[a-fA-F0-9]+$/))
@@ -160,4 +147,3 @@ const getPatchedPublicGameFile = async (hash) => {
 	})();
 	`);
 };
-exports.getPatchedPublicGameFile = getPatchedPublicGameFile;
